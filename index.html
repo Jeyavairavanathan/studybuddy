@@ -1,0 +1,447 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyBuddy | Student Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% if not session.get('user_id') %}
+
+    <main class="auth-container">
+        <section class="auth-card">
+
+            <div class="logo">📚 StudyBuddy</div>
+            <p class="subtitle">Your personal student productivity space</p>
+
+            <div class="form-tabs">
+                <button type="button" id="loginTab"
+                        class="tab active"
+                        onclick="showForm('login')">
+                    Login
+                </button>
+
+                <button type="button" id="signupTab"
+                        class="tab"
+                        onclick="showForm('signup')">
+                    Sign Up
+                </button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="loginForm" class="auth-form"
+                  action="/" method="POST">
+
+                <h2>Welcome Back 👋</h2>
+                <p class="form-description">Login to continue learning.</p>
+
+                <input type="hidden" name="action" value="login">
+
+                <label>Email Address</label>
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    autocomplete="email"
+                    required
+                >
+
+                <label>Password</label>
+
+                <div class="password-box">
+                    <input
+                        type="password"
+                        name="password"
+                        id="loginPassword"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        onclick="togglePassword('loginPassword', this)"
+                        aria-label="Show password"
+                    >👁️</button>
+                </div>
+
+                <div class="forgot-row">
+                    <a href="/forgot-password">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="primary-btn">
+                    Login
+                </button>
+
+                <p class="switch-text">
+                    Don't have an account?
+                    <a href="#" onclick="showForm('signup'); return false;">
+                        Sign up
+                    </a>
+                </p>
+            </form>
+
+            <!-- SIGNUP FORM -->
+            <form id="signupForm" class="auth-form"
+                  action="/" method="POST" style="display: none;">
+
+                <h2>Create Account ✨</h2>
+                <p class="form-description">Start your student journey.</p>
+
+                <input type="hidden" name="action" value="signup">
+
+                <label>Full Name</label>
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter your full name"
+                    autocomplete="name"
+                    required
+                >
+
+                <label>Email Address</label>
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    autocomplete="email"
+                    required
+                >
+
+                <label>Password (minimum 6 characters)</label>
+
+                <div class="password-box">
+                    <input
+                        type="password"
+                        name="password"
+                        id="signupPassword"
+                        minlength="6"
+                        placeholder="Create a password"
+                        autocomplete="new-password"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        onclick="togglePassword('signupPassword', this)"
+                        aria-label="Show password"
+                    >👁️</button>
+                </div>
+
+                <button type="submit" class="primary-btn">
+                    Create Account
+                </button>
+
+                <p class="switch-text">
+                    Already have an account?
+                    <a href="#" onclick="showForm('login'); return false;">
+                        Login
+                    </a>
+                </p>
+            </form>
+
+            <p class="footer-text">Made for students, with 💜</p>
+
+        </section>
+    </main>
+
+    {% else %}
+
+    <!-- DASHBOARD -->
+    <header class="topbar">
+        <div class="logo">📚 StudyBuddy</div>
+
+        <div class="topbar-right">
+            <span class="welcome-user">
+                Hi, {{ session.get('user_name', 'Student') }}!
+            </span>
+
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <main class="dashboard">
+
+        <section class="dashboard-heading">
+            <h1>Your Student Dashboard 💜</h1>
+            <p>Organize your studies and achieve your goals.</p>
+        </section>
+
+        <!-- TASK MANAGER -->
+        <section class="dashboard-card">
+            <h2>✅ My Tasks</h2>
+
+            <form action="/add-task" method="POST" class="input-form">
+                <input
+                    type="text"
+                    name="task"
+                    placeholder="Enter a new task"
+                    required
+                >
+
+                <input
+                    type="date"
+                    name="due_date"
+                >
+
+                <button type="submit" class="primary-btn">
+                    Add Task
+                </button>
+            </form>
+
+            <div class="item-list">
+                {% for task in tasks %}
+                    <div class="list-item">
+                        <div class="item-content">
+                            <span class="{% if task['completed'] %}completed{% endif %}">
+                                {{ task['task'] }}
+                            </span>
+
+                            {% if task['due_date'] %}
+                                <small>Due: {{ task['due_date'] }}</small>
+                            {% endif %}
+                        </div>
+
+                        <div class="item-actions">
+                            {% if not task['completed'] %}
+                                <a href="/complete-task/{{ task['id'] }}"
+                                   class="action-link">
+                                    Complete
+                                </a>
+                            {% endif %}
+
+                            <a href="/delete-task/{{ task['id'] }}"
+                               class="delete-link"
+                               onclick="return confirm('Delete this task?')">
+                                Delete
+                            </a>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty-message">No tasks yet. Add your first task!</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- ATTENDANCE TRACKER -->
+        <section class="dashboard-card">
+            <h2>📅 Attendance Tracker</h2>
+
+            <form action="/add-attendance" method="POST" class="input-form">
+                <input
+                    type="text"
+                    name="subject"
+                    placeholder="Subject name"
+                    required
+                >
+
+                <input
+                    type="number"
+                    name="attended"
+                    placeholder="Classes attended"
+                    min="0"
+                    required
+                >
+
+                <input
+                    type="number"
+                    name="total"
+                    placeholder="Total classes"
+                    min="1"
+                    required
+                >
+
+                <button type="submit" class="primary-btn">
+                    Add
+                </button>
+            </form>
+
+            <div class="item-list">
+                {% for item in attendance %}
+                    <div class="list-item">
+                        <div class="item-content">
+                            <strong>{{ item['subject'] }}</strong>
+
+                            <small>
+                                {{ item['attended'] }} / {{ item['total'] }} classes
+                                {% if item['total']|int > 0 %}
+                                    — {{ ((item['attended']|float / item['total']|float) * 100)|round(1) }}%
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <a href="/delete-attendance/{{ item['id'] }}"
+                           class="delete-link"
+                           onclick="return confirm('Delete attendance record?')">
+                            Delete
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="empty-message">No attendance records yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- TIMETABLE -->
+        <section class="dashboard-card">
+            <h2>🕒 My Timetable</h2>
+
+            <form action="/add-timetable" method="POST" class="input-form">
+                <select name="day" required>
+                    <option value="">Select day</option>
+                    <option>Monday</option>
+                    <option>Tuesday</option>
+                    <option>Wednesday</option>
+                    <option>Thursday</option>
+                    <option>Friday</option>
+                    <option>Saturday</option>
+                    <option>Sunday</option>
+                </select>
+
+                <input
+                    type="text"
+                    name="subject"
+                    placeholder="Subject or activity"
+                    required
+                >
+
+                <div class="time-field">
+    <label for="start_time">Start Time</label>
+    <input
+        type="time"
+        id="start_time"
+        name="start_time"
+        required
+    >
+</div>
+
+                <button type="submit" class="primary-btn">
+                    Add
+                </button>
+            </form>
+
+            <div class="item-list">
+                {% for item in timetable %}
+                    <div class="list-item">
+                        <div class="item-content">
+                            <strong>{{ item['day'] }}</strong>
+                            <span>{{ item['subject'] }}</span>
+                            <small>{{ item['start_time'] }}</small>
+                        </div>
+
+                        <a href="/delete-timetable/{{ item['id'] }}"
+                           class="delete-link"
+                           onclick="return confirm('Delete timetable entry?')">
+                            Delete
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="empty-message">Your timetable is empty.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- NOTES -->
+        <section class="dashboard-card">
+            <h2>📝 Quick Notes</h2>
+
+            <form action="/add-note" method="POST" class="notes-form">
+                <input
+                    type="text"
+                    name="title"
+                    placeholder="Note title"
+                    required
+                >
+
+                <textarea
+                    name="content"
+                    placeholder="Write your notes here..."
+                    rows="4"
+                    required
+                ></textarea>
+
+                <button type="submit" class="primary-btn">
+                    Save Note
+                </button>
+            </form>
+
+            <div class="notes-grid">
+                {% for note in notes %}
+                    <article class="note-item">
+                        <h3>{{ note['title'] }}</h3>
+                        <p>{{ note['content'] }}</p>
+
+                        <a href="/delete-note/{{ note['id'] }}"
+                           class="delete-link"
+                           onclick="return confirm('Delete this note?')">
+                            Delete
+                        </a>
+                    </article>
+                {% else %}
+                    <p class="empty-message">No notes saved yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="page-footer">
+        StudyBuddy — Stay organized. Keep learning. 💜
+    </footer>
+
+    {% endif %}
+
+    <script>
+        function showForm(formType) {
+            const loginForm = document.getElementById("loginForm");
+            const signupForm = document.getElementById("signupForm");
+            const loginTab = document.getElementById("loginTab");
+            const signupTab = document.getElementById("signupTab");
+
+            if (formType === "signup") {
+                loginForm.style.display = "none";
+                signupForm.style.display = "block";
+
+                loginTab.classList.remove("active");
+                signupTab.classList.add("active");
+            } else {
+                signupForm.style.display = "none";
+                loginForm.style.display = "block";
+
+                signupTab.classList.remove("active");
+                loginTab.classList.add("active");
+            }
+        }
+
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+
+            if (input.type === "password") {
+                input.type = "text";
+                button.textContent = "🙈";
+                button.setAttribute("aria-label", "Hide password");
+            } else {
+                input.type = "password";
+                button.textContent = "👁️";
+                button.setAttribute("aria-label", "Show password");
+            }
+        }
+    </script>
+
+</body>
+</html>
